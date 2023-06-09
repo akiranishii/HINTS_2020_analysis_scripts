@@ -1,0 +1,866 @@
+---
+title: "Disparities in Patient Portal Access by US Adults (HINTS 2020)"
+author: "Akira Nishii"
+date: "07/08/2022"
+output: html_document
+---
+
+## Load Library and data
+
+```{r setup, include=TRUE, message=FALSE}
+knitr::opts_chunk$set(echo =TRUE)
+
+library(haven)
+library(tidyverse); theme_set(theme_bw())
+library(tigerstats)
+library(SmartEDA)
+library(caret)
+library(Hmisc)
+library(lsr)
+library(base)
+library(survey)
+library(data.table)
+library(metaviz)
+library(corrplot)
+library(rlang)
+library(purrr)
+# library(ggforestplot)
+
+```
+
+```{r}
+
+data <- read_sas("hints5_cycle4_public.sas7bdat")
+
+```
+
+## Extract relevant data
+
+```{r}
+
+select_data <- data %>% select(FreqGoProvider, HealthInsurance, AccessOnlineRecord, NotAccessed_SpeakDirectly, NotAccessed_NoInternet, NotAccessed_NoNeed, NotAccessed_ConcernedPrivacy, NotAccessed_NoRecord, NotAccessed_LogInProb, NotAccessed_Uncomfortable, NotAccessed_MultipleRec, RaceEthn5, Age, BirthGender, EducA, Occupation_Employed, RUC2013, HealthIns_InsuranceEmp, HealthIns_InsurancePriv, HealthIns_Medicare, HealthIns_Medicaid, HealthIns_Tricare, HealthIns_VA, HealthIns_IHS, HealthIns_Other, HHInc, RegularProvider, QualityCare, GeneralHealth, Pandemic, OfferedAccessHCP2, OfferedAccessInsurer2,WhereUseInternet_Home, UseInternet, c(PERSON_FINWT1:PERSON_FINWT0))
+
+```
+
+## Clean variables
+
+```{r}
+
+#Rename pandemic variable
+select_data$Pandemic <- as.factor(select_data$Pandemic)
+
+select_data <- select_data %>% 
+  mutate(Pandemic = recode(.x = Pandemic, "-1" = "Before", "1" = "After"))
+
+#Create the combined health insurance variable 
+#Fill in InsuranceType variable (do other first, then private, then medicare, then medicaid)
+
+select_data$InsuranceType <- NA
+select_data$InsuranceType[select_data$HealthIns_Tricare == "1"] <- "Other"
+select_data$InsuranceType[select_data$HealthIns_VA == "1"] <- "Other"
+select_data$InsuranceType[select_data$HealthIns_IHS == "1"] <- "Other"
+select_data$InsuranceType[select_data$HealthIns_Other == "1"] <- "Other"
+select_data$InsuranceType[select_data$HealthIns_InsuranceEmp == "1"] <- "Private"
+select_data$InsuranceType[select_data$HealthIns_InsurancePriv == "1"] <- "Private"
+select_data$InsuranceType[select_data$HealthIns_Medicare == "1"] <- "Medicare"
+select_data$InsuranceType[select_data$HealthIns_Medicaid == "1"] <- "Medicaid"
+
+```
+
+```{r}
+
+#Create the Offered Access Variable
+#Set all NA is equal to -5
+select_data$OfferedAccessHCP2[select_data$OfferedAccessHCP2 == "-9"] <- "-5"
+select_data$OfferedAccessInsurer2[select_data$OfferedAccessInsurer2 == "-9"] <- "-5"
+
+#Make all "No", then add "Yes" and "NA"
+select_data$OfferedAccess <- "No"
+select_data$OfferedAccess[select_data$OfferedAccessHCP2 == "1"] <- "Yes"
+select_data$OfferedAccess[select_data$OfferedAccessInsurer2 == "1"] <- "Yes"
+select_data$OfferedAccess[select_data$OfferedAccessInsurer2 == "-5" & select_data$OfferedAccessHCP2 == "-5"] <- NA
+
+```
+
+```{r}
+
+#Make NA
+nalist <- c(-2, -4, -6, -9, -1, -5)
+
+for(i in nalist) {
+  select_data[select_data == i] <- NA
+}
+
+#Make the NAs in Race and Income "Missing"
+select_data$RaceEthn5[is.na(select_data$RaceEthn5)] <- "Missing"
+select_data$HHInc[is.na(select_data$HHInc)] <- "Missing"
+
+```
+
+```{r}
+
+#Convert num into factor
+
+cols <- c("FreqGoProvider", "HealthInsurance", "AccessOnlineRecord", "NotAccessed_SpeakDirectly", "NotAccessed_NoInternet", "NotAccessed_NoNeed", "NotAccessed_ConcernedPrivacy", "NotAccessed_NoRecord", "NotAccessed_LogInProb", "NotAccessed_Uncomfortable", "NotAccessed_MultipleRec", "RaceEthn5", "BirthGender", "EducA", "Occupation_Employed", "RUC2013", "InsuranceType", "RegularProvider", "GeneralHealth", "Pandemic", "OfferedAccess","WhereUseInternet_Home", "UseInternet", "HHInc")
+
+select_data[,cols] <- lapply(select_data[,cols],as.factor)
+
+```
+
+
+```{r}
+
+setDT(select_data, keep.rownames = TRUE)[]
+clean <- select_data
+
+```
+
+```{r}
+
+#Rename variables
+
+clean <- clean  %>% mutate(AccessOnlineRecord = dplyr::recode(.x = AccessOnlineRecord, "0" = "No", "1" = "Yes", "2" = "Yes", "3" = "Yes", "4" = "Yes")) %>% 
+  mutate(NotAccessed_SpeakDirectly = dplyr::recode(.x = NotAccessed_SpeakDirectly, "1" = "Yes", "2" = "No"))%>% 
+  mutate(NotAccessed_NoInternet = dplyr::recode(.x = NotAccessed_NoInternet, "1" = "Yes", "2" = "No")) %>% 
+  mutate(NotAccessed_NoNeed = dplyr::recode(.x = NotAccessed_NoNeed, "1" = "Yes", "2" = "No")) %>% 
+  mutate(NotAccessed_ConcernedPrivacy = dplyr::recode(.x = NotAccessed_ConcernedPrivacy, "1" = "Yes", "2" = "No")) %>% 
+  mutate(NotAccessed_NoRecord = dplyr::recode(.x = NotAccessed_NoRecord, "1" = "Yes", "2" = "No")) %>% 
+  mutate(NotAccessed_LogInProb = dplyr::recode(.x = NotAccessed_LogInProb, "1" = "Yes", "2" = "No")) %>% 
+  mutate(NotAccessed_Uncomfortable = dplyr::recode(.x = NotAccessed_Uncomfortable, "1" = "Yes", "2" = "No")) %>% 
+  mutate(NotAccessed_MultipleRec = dplyr::recode(.x = NotAccessed_MultipleRec, "1" = "Yes", "2" = "No")) %>% 
+  mutate(RaceEthn5 = dplyr::recode(.x = RaceEthn5, "1" = "Non-Hispanic White", "2" = "Non-Hispanic Black", "3" = "Hispanic","4" = "Other","5" = "Other")) %>% 
+  mutate(BirthGender = dplyr::recode(.x = BirthGender, "1" = "Male", "2" = "Female")) %>% 
+  mutate(EducA = recode(.x = EducA, "1" = "High School or Less", "2" = "High School or Less", "3" = "Some College","4" = "College Graduate or More")) %>% 
+  mutate(Occupation_Employed = dplyr::recode(.x = Occupation_Employed, "1" = "Employed", "2" = "Not Employed")) %>% 
+  mutate(RUC2013 = dplyr::recode(.x = RUC2013, "1" = "Metro", "2" = "Metro", "3" = "Metro", "4" = "Nonmetro","5" = "Nonmetro", "6" = "Nonmetro","7" = "Nonmetro", "8" = "Nonmetro")) %>% 
+  mutate(RegularProvider = dplyr::recode(.x = RegularProvider, "1" = "Yes", "2" = "No")) %>%
+  mutate(QualityCare = dplyr::recode(.x = QualityCare, "1" = "5", "2" = "4", "3" = "3", "4" = "2", "5" = "1"))%>%
+  mutate(GeneralHealth = dplyr::recode(.x = GeneralHealth, "1" = "Excellent, Very good, Good", "2" = "Excellent, Very good, Good", "3" = "Excellent, Very good, Good", "4" = "Fair, Poor", "5" = "Fair, Poor"))  %>% 
+  mutate(UseInternet = dplyr::recode(.x = UseInternet, "1" = "Yes", "2" = "No")) %>% 
+  mutate(HHInc = dplyr::recode(.x = HHInc, "1" = "<$35,000", "2" = "<$35,000",
+                               "3" = "$35-$74,999","4" = "$35-$74,999", "5" = "$75,000+"))
+
+#Make age category
+clean <- clean %>% mutate(age_cat = case_when(Age >= 18 & Age <= 30 ~ '18-30',
+                                              Age >= 31 & Age <= 40 ~ '31-40',
+                                              Age >= 41 & Age <= 50 ~ '41-50',
+                                              Age >= 51 & Age <= 64 ~ '51-64',
+                                              Age >= 65 ~ '65 or older'))
+
+clean$age_cat <- as.factor(clean$age_cat)
+
+#WE'RE USING USE INTERNET INSTEAD! Make the two variables interchangable so I don't make any errors later when running regressions
+clean$WhereUseInternet_Home <- clean$UseInternet
+
+```
+
+
+```{r}
+
+clean$QualityCare <- as.numeric(clean$QualityCare)
+write.csv(clean, file = "clean_data.csv", row.names = FALSE)
+
+```
+
+```{r}
+
+#relevel data
+clean <- clean %>% 
+  mutate(NotAccessed_SpeakDirectly = fct_relevel(NotAccessed_SpeakDirectly, 
+                                   c("No", 
+                                     "Yes"))) %>% 
+  mutate(NotAccessed_NoInternet = fct_relevel(NotAccessed_NoInternet, 
+                                   c("No", 
+                                     "Yes"))) %>% 
+  mutate(NotAccessed_NoNeed = fct_relevel(NotAccessed_NoNeed, 
+                                   c("No", 
+                                     "Yes"))) %>% 
+  mutate(NotAccessed_ConcernedPrivacy = fct_relevel(NotAccessed_ConcernedPrivacy, 
+                                   c("No", 
+                                     "Yes"))) %>% 
+  mutate(NotAccessed_NoRecord = fct_relevel(NotAccessed_NoRecord, 
+                                   c("No", 
+                                     "Yes"))) %>% 
+  mutate(NotAccessed_LogInProb = fct_relevel(NotAccessed_LogInProb, 
+                                   c("No", 
+                                     "Yes"))) %>% 
+  mutate(NotAccessed_Uncomfortable = fct_relevel(NotAccessed_Uncomfortable, 
+                                   c("No", 
+                                     "Yes"))) %>% 
+  mutate(NotAccessed_MultipleRec = fct_relevel(NotAccessed_MultipleRec, 
+                                   c("No", 
+                                     "Yes"))) %>% 
+  mutate(BirthGender = fct_relevel(BirthGender, 
+                                   c("Male", 
+                                     "Female"))) %>% 
+  mutate(EducA = fct_relevel(EducA, 
+                                   c("College Graduate or More", 
+                                     "Some College",
+                                     "High School or Less"))) %>% 
+  mutate(Occupation_Employed = fct_relevel(Occupation_Employed, 
+                                   c("Employed", 
+                                     "Not Employed"))) %>% 
+  mutate(InsuranceType = fct_relevel(InsuranceType, 
+                                   c("Private", 
+                                     "Medicaid",
+                                     "Medicare",
+                                     "Other")))  %>%
+  mutate(age_cat = fct_relevel(age_cat, 
+                                   c("18-30",
+                                     "31-40",
+                                     "41-50",
+                                     "51-64",
+                                     "65 or older")))
+
+```
+
+## Test for multicollinearity
+
+```{r}
+
+# test for correlation of covariates
+# source: https://towardsdatascience.com/how-to-create-a-correlation-matrix-with-too-many-variables-309cc0c0a57
+
+select_data_corr <- clean %>% select(RaceEthn5, age_cat, BirthGender, EducA, Occupation_Employed, RUC2013, InsuranceType, RegularProvider, QualityCare, GeneralHealth, Pandemic, WhereUseInternet_Home)
+
+# Convert all values into numeric
+# source: https://www.geeksforgeeks.org/convert-factor-to-numeric-and-numeric-to-factor-in-r-programming/#:~:text=vector%20using%20as.-,numeric().,factor%20levels%20will%20be%20returned.
+
+select_data_corr <- select_data_corr %>% mutate_if(is.character, as.factor)
+select_data_corr <- select_data_corr %>% mutate_if(is.factor, as.numeric)
+
+#Run correlation
+selectdata.corr <- rcorr(as.matrix(select_data_corr))
+selectdata.coeff <- selectdata.corr$r
+selectdata.p <- selectdata.corr$P
+
+#Filter correlations
+#prepare to drop duplicates and correlations of 1     
+selectdata.coeff[lower.tri(selectdata.coeff,diag=TRUE)] <- NA 
+#drop perfect correlations
+selectdata.coeff[selectdata.coeff == 1] <- NA 
+
+#Create dataframes from matrix
+selectdata.coeffdf <- as.data.frame(as.table(selectdata.coeff))
+selectdata.pdf <- as.data.frame(as.table(selectdata.p))
+
+#Rename column names
+selectdata.coeffdf <- selectdata.coeffdf  %>% rename(corr = Freq)
+selectdata.pdf <- selectdata.pdf  %>% rename(p = Freq)
+
+#Create dataframe with both coeff and p values
+selectdata.coeffpdf <- merge(selectdata.coeffdf, selectdata.pdf)
+
+#select significant values  
+selectdata.coeffpdf <- na.omit(selectdata.coeffpdf)
+selectdata.coeffpdf <- subset(selectdata.coeffpdf, p < 0.05) 
+#sort by highest correlation
+selectdata.coeffpdf <- selectdata.coeffpdf %>% arrange(p)
+
+#turn corr back into matrix in order to plot with corrplot
+mtx_corr <- reshape2::acast(selectdata.coeffpdf, Var1~Var2, value.var="corr")
+  
+#plot correlations visually
+corrplot(mtx_corr, is.corr=FALSE, tl.col="black", na.label=" ")
+
+```
+
+
+##  Table 1 (unweighted)
+
+```{r}
+
+table1vars <- c("AccessOnlineRecord", "OfferedAccess","RaceEthn5", "age_cat", "BirthGender", "EducA", "Occupation_Employed", "RUC2013", "RegularProvider", "QualityCare", "GeneralHealth", "InsuranceType", "FreqGoProvider", "HealthInsurance", "Pandemic", "WhereUseInternet_Home")
+
+```
+
+```{r}
+
+table_gen <- function(data) {
+  
+  check <- data %>% select(all_of(table1vars))
+
+  setDT(check)
+
+  check <- na.omit(check, col = table1vars)
+
+  check <- subset(check, FreqGoProvider != 0)
+  check <- subset(check, HealthInsurance != 2)
+  
+  return(check)
+  
+}
+  
+  
+```
+
+### Table1 values for Yes to Offered Access
+
+```{r}
+
+check <- table_gen(clean)
+check <- subset(check, OfferedAccess == "Yes")
+summary(check)
+
+```
+
+
+```{r}
+
+mean(check$QualityCare)
+sd(check$QualityCare)
+
+```
+
+### Table1 values for No to Offered Access
+
+
+```{r}
+
+check <- table_gen(clean)
+check <- subset(check, OfferedAccess == "No")
+summary(check)
+
+```
+
+```{r}
+
+mean(check$QualityCare)
+sd(check$QualityCare)
+
+```
+
+### Table1 values (all)
+
+```{r}
+
+
+check <- table_gen(clean)
+summary(check)
+
+```
+
+
+```{r}
+
+mean(check$QualityCare)
+sd(check$QualityCare)
+
+```
+
+
+## Table 1 (weighted)
+
+### Take care of FreqGoProvider and HealthInsurance Variables first
+
+```{r}
+
+#read in labels
+label <- read.csv("label.csv")
+
+clean$subset_var <- as.numeric(clean$subset_var)
+
+#create a variable that will later contain 1s where there is no NAs in the row
+clean$subset_var <- 1
+
+############### This section takes care of FreqGoProvider ######################
+
+#Set subset_var to 0 when FreqGoProvider is 0 or NA
+clean$subset_var[clean$FreqGoProvider == 0] <- 0
+clean$subset_var[is.na(clean$FreqGoProvider)] <- 0
+
+############### This section takes care of HealthInsurance ######################
+
+#Set subset_var to 0 when HealthInsurance is 2 or NA
+clean$subset_var[clean$HealthInsurance == 2] <- 0
+clean$subset_var[is.na(clean$HealthInsurance)] <- 0
+
+```
+
+### Functions for removing NAs based on different independent variables (offered = Yes)
+
+```{r}
+
+### Function to remove na for all variables of interst
+
+include_pandemic <- function(ind, clean_ = clean) {
+  
+  #Create new dataframe only containing variables of interest and rows with NA in them
+  data_na <- clean_ %>% select(rn, {{ind}}, AccessOnlineRecord, OfferedAccess, RaceEthn5, age_cat, BirthGender, EducA, Occupation_Employed, RUC2013, RegularProvider, QualityCare, GeneralHealth, Pandemic, InsuranceType, WhereUseInternet_Home)
+
+  summary(data_na)
+
+  data_na <- data_na[!complete.cases(data_na), ]
+
+  #Set subset_var to 0s where there are NAs in the row
+  clean_[match(data_na$rn, clean_$rn), which(colnames(clean_)=="subset_var")] <- 0
+
+  #Check number of 0s and 1s
+  clean_$subset_var <- as.factor(clean_$subset_var)
+  clean_ %>% select(subset_var) %>% summary()
+  
+  #Data preparaton and survey design for replicate weighting
+  select_data_dsgn<-svrepdesign(data=clean_,repweights=select(clean_, PERSON_FINWT1:PERSON_FINWT50), type="JKn", combined.weights=TRUE, weights=clean_$PERSON_FINWT0,scale=1,rscales=0.98)
+
+  #Data subsetting
+
+  dsub <- subset(select_data_dsgn, subset_var == 1)
+  
+  return(dsub)
+}
+
+### Function for getting table from the model
+
+weightedtable <- function(model) {
+  
+  tbl_svysummary(
+  {{model}},
+  digits = list(all_categorical() ~ c(0, 1)),
+  include = table1vars)
+  
+}
+
+```
+
+### Table 1 Incorporating Survey Weights (offered = Yes)
+
+```{r}
+
+library(gtsummary)
+# source: https://www.danieldsjoberg.com/gtsummary/reference/tbl_svysummary.html
+
+newdf <- clean
+#MODIFY THIS VARIABLE JUST FOR THE TABLE
+newdf$subset_var[newdf$OfferedAccess == "No"] <- 0
+
+dsub <- include_pandemic(AccessOnlineRecord, newdf)
+weightedtable(dsub)
+
+
+```
+
+```{r}
+
+svymean(~QualityCare, dsub)
+
+```
+
+### Table 1 Incorporating Survey Weights (offered = No)
+
+```{r}
+
+newdf <- clean
+#MODIFY THIS VARIABLE JUST FOR THE TABLE
+newdf$subset_var[newdf$OfferedAccess == "Yes"] <- 0
+dsub <- include_pandemic(AccessOnlineRecord, newdf)
+weightedtable(dsub)
+
+```
+
+```{r}
+
+svymean(~QualityCare, dsub)
+
+```
+
+### Table 1 Incorporating Survey Weights (all data)
+
+```{r}
+
+dsub <- include_pandemic(AccessOnlineRecord, clean)
+weightedtable(dsub)
+
+```
+
+```{r}
+
+svymean(~QualityCare, dsub)
+
+```
+
+### Table 1 statistics
+
+```{r message=FALSE}
+
+table1statsvars <- c("AccessOnlineRecord","RaceEthn5", "age_cat", "BirthGender", "EducA", "Occupation_Employed", "RUC2013", "RegularProvider", "QualityCare", "GeneralHealth", "InsuranceType", "Pandemic", "WhereUseInternet_Home")
+
+library(car)
+dsub <- include_pandemic(OfferedAccess, clean)
+
+table1stats <- function(var, dsn = dsub) {
+  f <- substitute(svyglm(OfferedAccess ~ var, data = clean_, family = "quasibinomial", design = dsn))
+  Anova(eval(f),2)
+}
+
+```
+
+```{r}
+
+for(i in table1statsvars) {
+  i <- rlang::sym(i)
+  f <- expr(table1stats(!!i, dsub))
+  print(eval(f))
+}
+
+```
+
+## Logistic regression models
+
+### AccessOnlineRecord (include pandemic variable)
+
+```{r}
+
+run_model <- function(dv, df = clean, dsn = dsub, str = "") {
+  
+  f <- substitute(svyglm(dv ~ RaceEthn5 + age_cat + BirthGender + EducA + Occupation_Employed + RUC2013 + RegularProvider + QualityCare + GeneralHealth + Pandemic + InsuranceType + WhereUseInternet_Home, data = df, family = "binomial", design = dsn))
+  svyglm_model <- eval(f)
+  print(summary(svyglm_model))
+  print(car::vif(svyglm_model))
+  
+  #This section gets odds ratios
+  print("Odds ratio")
+  #get odds ratio
+  or <- exp(svyglm_model$coefficients[-1])
+  print(or)
+  
+  print("Odds ratio as percentages")
+  #get odds ratio at percentage
+  print((exp(svyglm_model$coefficients[-1])-1)*100)
+  or <- as.data.frame(or)
+
+  ci <- exp(confint(svyglm_model))[-1,]
+  or <- merge(or, ci, by=0, all=TRUE)
+
+  #remove whitespace
+  or$Row.names <- gsub('\\s+', '', or$Row.names)
+
+  #reorder the entire table
+  ordering <- read.csv("order.csv")
+  order_vector <- as.vector(ordering$order)
+  or <- or[match(order_vector, or$Row.names),]
+
+  #rename columns to remove whitespace
+  or <- or %>% dplyr::rename_all(list(~make.names(.)))
+  
+  fileloc <- paste0("odds_ratios/odds_ratios_", as_string(enexpr(dv)), str, ".csv")
+  write.csv(or, fileloc)
+  
+  #log odds ratios
+  or <- svyglm_model$coefficients[-1]
+  se <- summary(svyglm_model)$coefficients[-1, c(2,4)]
+  or <- as.data.frame(or)
+  se <- as.data.frame(se)
+
+  or <- merge(or, se, by=0, all=TRUE)
+
+
+  #remove whitespace
+  or$Row.names <- gsub('\\s+', '', or$Row.names)
+
+  #reorder the entire table
+  ordering <- read.csv("order.csv")
+  order_vector <- as.vector(ordering$order)
+  or <- or[match(order_vector, or$Row.names),]
+
+  #rename columns to remove whitespace
+  or <- or %>% dplyr::rename_all(list(~make.names(.)))
+
+  fileloc <- paste0("log_odds_ratios/log_odds_ratios_", as_string(enexpr(dv)), str, ".csv")
+  write.csv(or, fileloc)
+}
+
+
+```
+
+```{r warning=FALSE}
+
+dsub <- include_pandemic(AccessOnlineRecord)
+run_model(AccessOnlineRecord)
+
+```
+
+
+### OfferedAccess (include pandemic variable)
+
+```{r warning=FALSE}
+
+dsub <- include_pandemic(OfferedAccess)
+run_model(OfferedAccess)
+
+```
+
+
+## Table 3
+
+### Reasons for non-access ("No" for AccessOnlineRecord)
+
+```{r warning=FALSE}
+
+reasons <- c("NotAccessed_ConcernedPrivacy", "NotAccessed_SpeakDirectly", "NotAccessed_NoInternet", "NotAccessed_NoNeed", "NotAccessed_NoRecord", "NotAccessed_LogInProb", "NotAccessed_Uncomfortable","NotAccessed_MultipleRec")
+
+newdf <- clean
+newdf$subset_var[newdf$AccessOnlineRecord == "Yes"] <- 0
+
+for(i in reasons) {
+  i <- rlang::sym(i)
+  dsub <- eval(expr(include_pandemic(!!i, newdf)))
+  eval(expr(run_model(!!i)))
+}
+```
+
+
+## Figure (plots)
+
+Plots were commented out because the new version of R does not support ggforestplot (uncomment and run on older version of R to get the plots)
+
+<!-- ```{R} -->
+
+<!-- plot_data <- read.csv("ggforest.csv") -->
+
+<!-- labels.vec <- c("Uncomfortable with technology", "Concerned about privacy", "Prefers direct communication", "Perceived not needed", "Inability to access website", "No online record") -->
+<!-- plot_data <- plot_data %>% -->
+<!--   mutate(reason = fct_relevel(reason, labels.vec)) -->
+
+<!-- age <- plot_data %>% filter(variable == "Age") -->
+<!-- sex <- plot_data %>% filter(variable == "Sex") -->
+<!-- race <- plot_data %>% filter(variable == "Race") -->
+<!-- educ <- plot_data %>% filter(variable == "Education") -->
+<!-- emp <- plot_data %>% filter(variable == "Employment") -->
+<!-- loc <- plot_data %>% filter(variable == "Location") -->
+<!-- gh <- plot_data %>% filter(variable == "General Health") -->
+<!-- ins <- plot_data %>% filter(variable == "Insurance type") -->
+<!-- rp <- plot_data %>% filter(variable == "Regular Provider") -->
+<!-- int <- plot_data %>% filter(variable == "Use Internet") -->
+<!-- qc <- plot_data %>% filter(variable == "Quality Care") -->
+
+
+<!-- ggforestplot::forestplot( -->
+<!--   df = age, -->
+<!--   name = characteristic, -->
+<!--   estimate = or, -->
+<!--   se = se, -->
+<!--   pvalue = pvalue, -->
+<!--   psignif = 0.05, -->
+<!--   colour = reason, -->
+<!--   xlab = "Odds ratio", -->
+<!--   title = "Age (ref: 18-30)", -->
+<!--   logodds = TRUE -->
+<!-- ) + -->
+<!--   theme(plot.title = element_text(hjust = 0.5)) + theme(legend.position = "none") + theme(text = element_text(size=25)) -->
+
+
+<!-- ``` -->
+
+<!-- ```{R} -->
+
+<!-- #To get legend -->
+<!-- ggforestplot::forestplot( -->
+<!--   df = sex, -->
+<!--   name = characteristic, -->
+<!--   estimate = or, -->
+<!--   se = se, -->
+<!--   pvalue = pvalue, -->
+<!--   psignif = 0.05, -->
+<!--   colour = reason, -->
+<!--   xlab = "Odds ratio", -->
+<!--   title = "Sex (ref: male)", -->
+<!--   logodds = TRUE -->
+<!-- ) + -->
+<!--   theme(plot.title = element_text(hjust = 0.5)) + theme(text = element_text(size=17))  -->
+
+
+<!-- ``` -->
+
+<!-- ```{R} -->
+
+<!-- #For plot without legend -->
+<!-- ggforestplot::forestplot( -->
+<!--   df = sex, -->
+<!--   name = characteristic, -->
+<!--   estimate = or, -->
+<!--   se = se, -->
+<!--   pvalue = pvalue, -->
+<!--   psignif = 0.05, -->
+<!--   colour = reason, -->
+<!--   xlab = "Odds ratio", -->
+<!--   title = "Sex (ref: male)", -->
+<!--   logodds = TRUE -->
+<!-- ) + -->
+<!--   theme(plot.title = element_text(hjust = 0.5)) + theme(legend.position = "none") + theme(text = element_text(size=20))  -->
+
+
+<!-- ``` -->
+
+
+<!-- ```{R} -->
+
+<!-- ggforestplot::forestplot( -->
+<!--   df = race, -->
+<!--   name = characteristic, -->
+<!--   estimate = or, -->
+<!--   se = se, -->
+<!--   pvalue = pvalue, -->
+<!--   psignif = 0.05, -->
+<!--   colour = reason, -->
+<!--   xlab = "Odds ratio", -->
+<!--   title = "Race/ethnicity\n(ref: non-Hispanic white)", -->
+<!--   logodds = TRUE -->
+<!-- ) + -->
+<!--   theme(plot.title = element_text(hjust = 0.5)) + theme(legend.position = "none") + theme(text = element_text(size=20))  -->
+
+
+<!-- ``` -->
+
+<!-- ```{R} -->
+
+<!-- ggforestplot::forestplot( -->
+<!--   df = educ, -->
+<!--   name = characteristic, -->
+<!--   estimate = or, -->
+<!--   se = se, -->
+<!--   pvalue = pvalue, -->
+<!--   psignif = 0.05, -->
+<!--   colour = reason, -->
+<!--   xlab = "Odds ratio", -->
+<!--   title = "Education\n(ref: college or more)", -->
+<!--   logodds = TRUE -->
+<!-- ) + -->
+<!--   theme(plot.title = element_text(hjust = 0.5)) + theme(legend.position = "none") + theme(text = element_text(size=20))  -->
+
+
+<!-- ``` -->
+
+
+<!-- ```{R} -->
+
+<!-- ggforestplot::forestplot( -->
+<!--   df = emp, -->
+<!--   name = characteristic, -->
+<!--   estimate = or, -->
+<!--   se = se, -->
+<!--   pvalue = pvalue, -->
+<!--   psignif = 0.05, -->
+<!--   colour = reason, -->
+<!--   xlab = "Odds ratio", -->
+<!--   title = "Employment status (ref: employed)", -->
+<!--   logodds = TRUE -->
+<!-- ) + -->
+<!--   theme(plot.title = element_text(hjust = 0.5)) + theme(legend.position = "none") + theme(text = element_text(size=20)) -->
+
+
+<!-- ``` -->
+
+
+<!-- ```{R} -->
+
+<!-- ggforestplot::forestplot( -->
+<!--   df = loc, -->
+<!--   name = characteristic, -->
+<!--   estimate = or, -->
+<!--   se = se, -->
+<!--   pvalue = pvalue, -->
+<!--   psignif = 0.05, -->
+<!--   colour = reason, -->
+<!--   xlab = "Odds ratio", -->
+<!--   title = "Location (ref: metro)", -->
+<!--   logodds = TRUE -->
+<!-- ) + -->
+<!--   theme(plot.title = element_text(hjust = 0.5)) + theme(legend.position = "none") + theme(text = element_text(size=20)) -->
+
+
+<!-- ``` -->
+
+<!-- ```{R} -->
+
+<!-- ggforestplot::forestplot( -->
+<!--   df = gh, -->
+<!--   name = characteristic, -->
+<!--   estimate = or, -->
+<!--   se = se, -->
+<!--   pvalue = pvalue, -->
+<!--   psignif = 0.05, -->
+<!--   colour = reason, -->
+<!--   xlab = "Odds ratio", -->
+<!--   title = "General Health\n(ref: Excellent, Very good, Good)", -->
+<!--   logodds = TRUE -->
+<!-- ) + -->
+<!--   theme(plot.title = element_text(hjust = 0.5)) + theme(legend.position = "none") + theme(text = element_text(size=20)) -->
+
+
+<!-- ``` -->
+
+<!-- ```{R} -->
+
+<!-- ggforestplot::forestplot( -->
+<!--   df = ins, -->
+<!--   name = characteristic, -->
+<!--   estimate = or, -->
+<!--   se = se, -->
+<!--   pvalue = pvalue, -->
+<!--   psignif = 0.05, -->
+<!--   colour = reason, -->
+<!--   xlab = "Odds ratio", -->
+<!--   title = "Insurance type (ref: private)", -->
+<!--   logodds = TRUE -->
+<!-- ) + -->
+<!--   theme(plot.title = element_text(hjust = 0.5)) + theme(legend.position = "none") + theme(text = element_text(size=20)) -->
+
+
+<!-- ``` -->
+
+<!-- ```{R} -->
+
+<!-- ggforestplot::forestplot( -->
+<!--   df = rp, -->
+<!--   name = characteristic, -->
+<!--   estimate = or, -->
+<!--   se = se, -->
+<!--   pvalue = pvalue, -->
+<!--   psignif = 0.05, -->
+<!--   colour = reason, -->
+<!--   xlab = "Odds ratio", -->
+<!--   title = "Has a regular health care provider\n(ref: yes)", -->
+<!--   logodds = TRUE -->
+<!-- ) + -->
+<!--   theme(plot.title = element_text(hjust = 0.5)) + theme(legend.position = "none") + theme(text = element_text(size=20)) -->
+
+
+<!-- ``` -->
+
+<!-- ```{R} -->
+
+<!-- ggforestplot::forestplot( -->
+<!--   df = int, -->
+<!--   name = characteristic, -->
+<!--   estimate = or, -->
+<!--   se = se, -->
+<!--   pvalue = pvalue, -->
+<!--   psignif = 0.05, -->
+<!--   colour = reason, -->
+<!--   xlab = "Odds ratio", -->
+<!--   title = "Use internet (ref: yes)", -->
+<!--   logodds = TRUE -->
+<!-- ) + -->
+<!--   theme(plot.title = element_text(hjust = 0.5)) + theme(legend.position = "none") + theme(text = element_text(size=20)) -->
+
+
+<!-- ``` -->
+
+<!-- ```{R} -->
+
+<!-- ggforestplot::forestplot( -->
+<!--   df = qc, -->
+<!--   name = characteristic, -->
+<!--   estimate = or, -->
+<!--   se = se, -->
+<!--   pvalue = pvalue, -->
+<!--   psignif = 0.05, -->
+<!--   colour = reason, -->
+<!--   xlab = "Odds ratio", -->
+<!--   title = "QualityCare", -->
+<!--   logodds = TRUE -->
+<!-- ) + -->
+<!--   theme(plot.title = element_text(hjust = 0.5)) + theme(legend.position = "none") + theme(text = element_text(size=20)) -->
+
+
+<!-- ``` -->
