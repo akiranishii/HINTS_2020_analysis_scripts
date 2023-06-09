@@ -1,0 +1,132 @@
+variable,characteristic,or,se,reason,pvalue
+Sex,Female,-0.046334742,0.253650108,Prefers direct communication,0.856420201
+Age,31-40,0.336601188,0.535479282,Prefers direct communication,0.534894345
+Age,41-50,0.413670734,0.642468963,Prefers direct communication,0.525087662
+Age,51-64,0.982671252,0.520573269,Prefers direct communication,0.069862489
+Age,65 or older,0.667886924,0.657140542,Prefers direct communication,0.318482707
+Race,Non-Hispanic Black,0.398264719,0.432888048,Prefers direct communication,0.365710686
+Race,Hispanic,-0.345509174,0.473277552,Prefers direct communication,0.471655831
+Race,Non-Hispanic Asian,0.794978986,0.537276919,Prefers direct communication,0.150542405
+Race,Non-Hispanic Other,0.035505886,0.872456235,Prefers direct communication,0.967837327
+Race,Missing,0.185326556,0.541229425,Prefers direct communication,0.734687888
+Education,Some College,0.28521966,0.283270163,Prefers direct communication,0.322930346
+Education,High School or Less,0.654644526,0.405106713,Prefers direct communication,0.117724869
+Employment,Not employed,0.133335087,0.423794377,Prefers direct communication,0.755467052
+Location,Nonmetro,0.849311866,0.42001343,Prefers direct communication,0.053176137
+General Health,"Fair, Poor",0.218458699,0.34949572,Prefers direct communication,0.537173682
+Insurance type,Medicaid,0.273434579,0.504192123,Prefers direct communication,0.592045044
+Insurance type,Medicare,0.186756649,0.465331456,Prefers direct communication,0.691327863
+Insurance type,Other,-0.368315874,0.442618413,Prefers direct communication,0.412635555
+Regular Provider,No,0.060345186,0.333208501,Prefers direct communication,0.857639074
+Use Internet,No,1.081784024,0.417009186,Prefers direct communication,0.01513746
+Quality Care,Quality Care,0.264709795,0.132308163,Prefers direct communication,0.055571749
+Pandemic,After,0.041167203,0.31729905,Prefers direct communication,0.897731831
+Sex,Female,-0.778835202,0.289497636,Inability to access website,0.012094446
+Age,31-40,-0.155063229,0.57437076,Inability to access website,0.789235639
+Age,41-50,-0.609474187,0.631243215,Inability to access website,0.342856444
+Age,51-64,-0.025758255,0.558766201,Inability to access website,0.963571058
+Age,65 or older,0.306208244,0.64055576,Inability to access website,0.636472904
+Race,Non-Hispanic Black,0.752121429,0.339399887,Inability to access website,0.035306197
+Race,Hispanic,0.325557926,0.31386468,Inability to access website,0.308817471
+Race,Non-Hispanic Asian,0.209870597,0.518144862,Inability to access website,0.68863779
+Race,Non-Hispanic Other,0.310754225,1.69505973,Inability to access website,0.85590938
+Race,Missing,0.346738597,0.53112696,Inability to access website,0.519382782
+Education,Some College,-0.365374995,0.289539085,Inability to access website,0.217770484
+Education,High School or Less,-0.133346337,0.353607046,Inability to access website,0.709044736
+Employment,Not employed,-0.058849525,0.252801888,Inability to access website,0.817680853
+Location,Nonmetro,0.307370889,0.339411513,Inability to access website,0.373158678
+General Health,"Fair, Poor",0.285086038,0.292138487,Inability to access website,0.337797086
+Insurance type,Medicaid,1.208076149,0.382572532,Inability to access website,0.003889221
+Insurance type,Medicare,0.252207823,0.509403102,Inability to access website,0.624531618
+Insurance type,Other,0.081729178,0.509042283,Inability to access website,0.873639296
+Regular Provider,No,-0.516011987,0.265,Inability to access website,0.053376032
+Use Internet,No,0.711595044,0.336327964,Inability to access website,0.043730701
+Quality Care,Quality Care,-0.028474635,0.142191614,Inability to access website,0.842781598
+Pandemic,After,0.106435433,0.267499748,Inability to access website,0.693840007
+Sex,Female,-0.568225319,0.239131503,Perceived not needed,0.024845217
+Age,31-40,-0.033750307,0.424618469,Perceived not needed,0.93723398
+Age,41-50,-0.168157423,0.469691169,Perceived not needed,0.723114451
+Age,51-64,-0.01407023,0.441119614,Perceived not needed,0.974789108
+Age,65 or older,-0.451576836,0.599828479,Perceived not needed,0.458058369
+Race,Non-Hispanic Black,-1.174471513,0.320285816,Perceived not needed,0.0010607
+Race,Hispanic,-0.311927859,0.241693374,Perceived not needed,0.207787525
+Race,Non-Hispanic Asian,-0.533202249,0.394988613,Perceived not needed,0.188251622
+Race,Non-Hispanic Other,-0.758801127,0.671295283,Perceived not needed,0.268268829
+Race,Missing,-0.967360366,0.452245308,Perceived not needed,0.041632038
+Education,Some College,0.196868211,0.29691648,Perceived not needed,0.512924764
+Education,High School or Less,0.018256494,0.264301246,Perceived not needed,0.945439306
+Employment,Not employed,0.075527101,0.257971066,Perceived not needed,0.77193353
+Location,Nonmetro,-0.061798387,0.276915281,Perceived not needed,0.82508525
+General Health,"Fair, Poor",0.026365932,0.242488284,Perceived not needed,0.914220104
+Insurance type,Medicaid,-0.21607075,0.357348569,Perceived not needed,0.550459731
+Insurance type,Medicare,0.281672777,0.424264175,Perceived not needed,0.512378524
+Insurance type,Other,0.280111014,0.416977904,Perceived not needed,0.507441229
+Regular Provider,No,0.183883594,0.225930309,Perceived not needed,0.422825194
+Use Internet,No,-0.118593456,0.355189657,Perceived not needed,0.741043747
+Quality Care,Quality Care,-0.000605164,0.093495422,Perceived not needed,0.994883186
+Pandemic,After,0.098962007,0.260212852,Perceived not needed,0.706689563
+Sex,Female,0.090548271,0.204444914,Concerned about privacy,0.661367672
+Age,31-40,0.427011118,0.620511948,Concerned about privacy,0.497222733
+Age,41-50,1.012456173,0.568535129,Concerned about privacy,0.086198182
+Age,51-64,1.514363171,0.480314796,Concerned about privacy,0.003937185
+Age,65 or older,0.990891893,0.62804967,Concerned about privacy,0.126273803
+Race,Non-Hispanic Black,0.219046267,0.289999801,Concerned about privacy,0.456588579
+Race,Hispanic,0.070502747,0.364070539,Concerned about privacy,0.84789841
+Race,Non-Hispanic Asian,-0.056651176,0.536284312,Concerned about privacy,0.916651711
+Race,Non-Hispanic Other,-0.321124697,0.784821577,Concerned about privacy,0.685643338
+Race,Missing,-0.276077169,0.502289354,Concerned about privacy,0.587085932
+Education,Some College,-0.403753936,0.248429551,Concerned about privacy,0.115732316
+Education,High School or Less,-0.811706309,0.267603842,Concerned about privacy,0.005295251
+Employment,Not employed,-0.048278611,0.272542725,Concerned about privacy,0.860719469
+Location,Nonmetro,-0.238688996,0.335169879,Concerned about privacy,0.482484849
+General Health,"Fair, Poor",0.233754035,0.263328102,Concerned about privacy,0.382546608
+Insurance type,Medicaid,1.135175132,0.341367789,Concerned about privacy,0.002551402
+Insurance type,Medicare,0.207376066,0.443591001,Concerned about privacy,0.643897845
+Insurance type,Other,0.537156504,0.587844885,Concerned about privacy,0.368924674
+Regular Provider,No,0.22336474,0.248783883,Concerned about privacy,0.377214851
+Use Internet,No,0.781197487,0.33409919,Concerned about privacy,0.027031913
+Quality Care,Quality Care,-0.241995909,0.107378004,Concerned about privacy,0.032540669
+Pandemic,After,-0.055874278,0.230971329,Concerned about privacy,0.810677858
+Sex,Female,-0.086610586,0.190611836,No online record,0.653185886
+Age,31-40,-0.230889322,0.466520702,No online record,0.624661867
+Age,41-50,-0.139882841,0.477151749,No online record,0.771639656
+Age,51-64,-0.217431769,0.435448573,No online record,0.621592708
+Age,65 or older,-0.275847392,0.525583439,No online record,0.60397738
+Race,Non-Hispanic Black,-0.717853788,0.284628613,No online record,0.017870192
+Race,Hispanic,-0.554391838,0.410054422,No online record,0.187594247
+Race,Non-Hispanic Asian,0.076341809,0.410188463,No online record,0.85374663
+Race,Non-Hispanic Other,-1.059893819,0.921357362,No online record,0.26008212
+Race,Missing,-0.751214042,0.519444813,No online record,0.159634441
+Education,Some College,-0.012454546,0.257572235,No online record,0.961790344
+Education,High School or Less,-0.383277734,0.325500014,No online record,0.249269758
+Employment,Not employed,-0.437818104,0.245407643,No online record,0.085660438
+Location,Nonmetro,0.704115878,0.326501864,No online record,0.040109234
+General Health,"Fair, Poor",-0.017286502,0.297423955,No online record,0.954080472
+Insurance type,Medicaid,0.826277433,0.307859594,No online record,0.012276504
+Insurance type,Medicare,0.579295577,0.336218681,No online record,0.096329969
+Insurance type,Other,0.450476462,0.535144514,No online record,0.407302899
+Regular Provider,No,0.151287156,0.229633699,No online record,0.515591303
+Use Internet,No,0.085286526,0.31332594,No online record,0.787540973
+Quality Care,Quality Care,-0.194234327,0.106560712,No online record,0.079432877
+Pandemic,After,-0.107068147,0.218570273,No online record,0.628191942
+Sex,Female,-0.118867838,0.222682288,Uncomfortable with technology,0.597692498
+Age,41-50,1.787499327,0.643847195,Uncomfortable with technology,0.00969262
+Age,51-64,2.491900231,0.427624117,Uncomfortable with technology,2.92E-06
+Age,65 or older,2.486035605,0.611623235,Uncomfortable with technology,0.000353244
+Race,Non-Hispanic Black,-0.223106916,0.477351378,Uncomfortable with technology,0.643841481
+Race,Hispanic,-0.036831905,0.34123123,Uncomfortable with technology,0.914814425
+Race,Non-Hispanic Asian,0.773147136,0.56031241,Uncomfortable with technology,0.178552708
+Race,Non-Hispanic Other,0.236587573,0.643464826,Uncomfortable with technology,0.715878438
+Race,Missing,0.196111503,0.385288766,Uncomfortable with technology,0.614740942
+Education,Some College,0.715730025,0.269287637,Uncomfortable with technology,0.012847376
+Education,High School or Less,1.067750266,0.348381703,Uncomfortable with technology,0.004781303
+Employment,Not employed,0.307388587,0.26027896,Uncomfortable with technology,0.247538877
+Location,Nonmetro,0.348876752,0.367271888,Uncomfortable with technology,0.350283643
+General Health,"Fair, Poor",0.606332829,0.314102159,Uncomfortable with technology,0.063746467
+Insurance type,Medicaid,0.643353922,0.408333879,Uncomfortable with technology,0.12636033
+Insurance type,Medicare,0.421869691,0.511800487,Uncomfortable with technology,0.416744113
+Insurance type,Other,0.605704126,0.826192922,Uncomfortable with technology,0.469574981
+Regular Provider,No,-0.191597085,0.292735141,Uncomfortable with technology,0.518126072
+Use Internet,No,0.947291254,0.333142536,Uncomfortable with technology,0.008241588
+Quality Care,Quality Care,-0.024882497,0.138885641,Uncomfortable with technology,0.859103651
+Pandemic,After,0.171238887,0.250564286,Uncomfortable with technology,0.499962581
