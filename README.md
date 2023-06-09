@@ -32,4 +32,5 @@ prevent exacerbating existing disparities, particularly during surges in cases o
 viruses that tax health care resources.
 
 ### Relevant sites
+[Link to raw data] (https://hints.cancer.gov/data/download-data.aspx)
 [Full-length manuscript](https://academic.oup.com/jamiaopen/article/5/4/ooac104/6887151)
